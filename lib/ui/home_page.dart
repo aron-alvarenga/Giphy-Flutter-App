@@ -13,14 +13,14 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late String _search;
+  String? _search;
 
   int _offset = 0;
 
   _getGifs() async {
     http.Response response;
 
-    if (_search == null) {
+    if (_search != null) {
       response = await http.get(
           'https://api.giphy.com/v1/gifs/trending?api_key=jZ4yCwYFcdWUzLKAoVYFeTyAVj7r5ESb&limit=20&rating=g');
     } else {
@@ -44,7 +44,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text(
+        title: const Text(
           'GIPHY Flutter App',
           style: TextStyle(
             fontFamily: 'MontserratBlack',
@@ -56,7 +56,7 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          Padding(
+          const Padding(
             padding: EdgeInsets.all(10.0),
             child: TextField(
               decoration: InputDecoration(
@@ -70,8 +70,55 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
+          Expanded(
+            child: FutureBuilder(
+              future: _getGifs(),
+              builder: (context, snapshot) {
+                switch (snapshot.connectionState) {
+                  case ConnectionState.waiting:
+                  case ConnectionState.none:
+                    return Container(
+                      width: 200.0,
+                      height: 200.0,
+                      alignment: Alignment.center,
+                      child: const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                        strokeWidth: 5.0,
+                      ),
+                    );
+                  default:
+                    if (snapshot.hasError) {
+                      return Container();
+                    } else {
+                      return _createGifTable(context, snapshot);
+                    }
+                }
+              },
+            ),
+          ),
         ],
       ),
     );
   }
+}
+
+Widget _createGifTable(BuildContext context, AsyncSnapshot snapshot) {
+  return GridView.builder(
+    padding: const EdgeInsets.all(10.0),
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 2,
+      crossAxisSpacing: 10.0,
+      mainAxisSpacing: 10.0,
+    ),
+    itemCount: snapshot.data['data'].length,
+    itemBuilder: (context, index) {
+      return GestureDetector(
+        child: Image.network(
+          snapshot.data['data'][index]['images']['fixed_height']['url'],
+          height: 300.0,
+          fit: BoxFit.cover,
+        ),
+      );
+    },
+  );
 }
