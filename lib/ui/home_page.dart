@@ -14,21 +14,18 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String? _search;
-
   int _offset = 0;
 
-  _getGifs() async {
+  Future<Map> _getGifs() async {
     http.Response response;
-
-    if (_search != null) {
+    if (_search == null) {
       response = await http.get(
-          'https://api.giphy.com/v1/gifs/trending?api_key=jZ4yCwYFcdWUzLKAoVYFeTyAVj7r5ESb&limit=20&rating=g');
+          "https://api.giphy.com/v1/gifs/trending?api_key=jZ4yCwYFcdWUzLKAoVYFeTyAVj7r5ESb&limit=19&rating=g");
     } else {
       response = await http.get(
-          'https://api.giphy.com/v1/gifs/search?api_key=jZ4yCwYFcdWUzLKAoVYFeTyAVj7r5ESb&q=$_search&limit=20&offset=$_offset&rating=g&lang=en');
-
-      return json.decode(response.body);
+          "https://api.giphy.com/v1/gifs/search?api_key=jZ4yCwYFcdWUzLKAoVYFeTyAVj7r5ESb&q=$_search&limit=20&offset=$_offset&rating=g&lang=en");
     }
+    return json.decode(response.body);
   }
 
   @override
@@ -56,18 +53,24 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.all(10.0),
+          Padding(
+            padding: const EdgeInsets.all(10.0),
             child: TextField(
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Search all the GIFs',
                 labelStyle: TextStyle(color: Colors.white),
                 border: OutlineInputBorder(),
               ),
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18.0,
               ),
+              onSubmitted: (searchText) {
+                setState(() {
+                  _search = searchText;
+                  // _offset = 0;
+                });
+              },
             ),
           ),
           Expanded(
@@ -100,25 +103,60 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-}
 
-Widget _createGifTable(BuildContext context, AsyncSnapshot snapshot) {
-  return GridView.builder(
-    padding: const EdgeInsets.all(10.0),
-    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 2,
-      crossAxisSpacing: 10.0,
-      mainAxisSpacing: 10.0,
-    ),
-    itemCount: snapshot.data['data'].length,
-    itemBuilder: (context, index) {
-      return GestureDetector(
-        child: Image.network(
-          snapshot.data['data'][index]['images']['fixed_height']['url'],
-          height: 300.0,
-          fit: BoxFit.cover,
-        ),
-      );
-    },
-  );
+  int _getCount(List data) {
+    if (_search == null) {
+      return data.length;
+    } else {
+      return data.length + 1;
+    }
+  }
+
+  Widget _createGifTable(BuildContext context, AsyncSnapshot snapshot) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(10.0),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 10.0,
+        mainAxisSpacing: 10.0,
+      ),
+      itemCount: _getCount(snapshot.data['data']),
+      itemBuilder: (context, index) {
+        if (_search == null || index < snapshot.data['data'].length) {
+          return GestureDetector(
+            child: Image.network(
+              snapshot.data['data'][index]['images']['fixed_height']['url'],
+              height: 300.0,
+              fit: BoxFit.cover,
+            ),
+          );
+        } else {
+          return GestureDetector(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(
+                  Icons.add,
+                  color: Colors.white,
+                  size: 70.0,
+                ),
+                Text(
+                  'Load more',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22.0,
+                  ),
+                ),
+              ],
+            ),
+            onTap: () {
+              setState(() {
+                _offset += 19;
+              });
+            },
+          );
+        }
+      },
+    );
+  }
 }
