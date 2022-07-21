@@ -1,4 +1,4 @@
-// ignore_for_file: unnecessary_null_comparison, import_of_legacy_library_into_null_safe
+// ignore_for_file: unnecessary_null_comparison, import_of_legacy_library_into_null_safe, avoid_unnecessary_containers
 
 import 'dart:convert';
 
@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:giphy_app/ui/gif_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:share/share.dart';
+import 'package:transparent_image/transparent_image.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -20,12 +21,12 @@ class _HomePageState extends State<HomePage> {
 
   Future<Map> _getGifs() async {
     http.Response response;
-    if (_search == null) {
+    if (_search == null || _search!.isEmpty) {
       response = await http.get(
-          "https://api.giphy.com/v1/gifs/trending?api_key=jZ4yCwYFcdWUzLKAoVYFeTyAVj7r5ESb&limit=19&rating=g");
+          "https://api.giphy.com/v1/gifs/trending?api_key=jZ4yCwYFcdWUzLKAoVYFeTyAVj7r5ESb&limit=20&rating=g");
     } else {
       response = await http.get(
-          "https://api.giphy.com/v1/gifs/search?api_key=jZ4yCwYFcdWUzLKAoVYFeTyAVj7r5ESb&q=$_search&limit=20&offset=$_offset&rating=g&lang=en");
+          "https://api.giphy.com/v1/gifs/search?api_key=jZ4yCwYFcdWUzLKAoVYFeTyAVj7r5ESb&q=$_search&limit=19&offset=$_offset&rating=g&lang=en");
     }
     return json.decode(response.body);
   }
@@ -70,7 +71,7 @@ class _HomePageState extends State<HomePage> {
               onSubmitted: (searchText) {
                 setState(() {
                   _search = searchText;
-                  // _offset = 0;
+                  _offset = 0;
                 });
               },
             ),
@@ -126,8 +127,10 @@ class _HomePageState extends State<HomePage> {
       itemBuilder: (context, index) {
         if (_search == null || index < snapshot.data['data'].length) {
           return GestureDetector(
-            child: Image.network(
-              snapshot.data['data'][index]['images']['fixed_height']['url'],
+            child: FadeInImage.memoryNetwork(
+              placeholder: kTransparentImage,
+              image: snapshot.data['data'][index]['images']['fixed_height']
+                  ['url'],
               height: 300.0,
               fit: BoxFit.cover,
             ),
@@ -146,29 +149,31 @@ class _HomePageState extends State<HomePage> {
             },
           );
         } else {
-          return GestureDetector(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(
-                  Icons.add,
-                  color: Colors.white,
-                  size: 70.0,
-                ),
-                Text(
-                  'Load more',
-                  style: TextStyle(
+          return Container(
+            child: GestureDetector(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(
+                    Icons.add,
                     color: Colors.white,
-                    fontSize: 22.0,
+                    size: 70.0,
                   ),
-                ),
-              ],
+                  Text(
+                    'Load more',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22.0,
+                    ),
+                  ),
+                ],
+              ),
+              onTap: () {
+                setState(() {
+                  _offset += 19;
+                });
+              },
             ),
-            onTap: () {
-              setState(() {
-                _offset += 19;
-              });
-            },
           );
         }
       },
